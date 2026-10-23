@@ -14,15 +14,22 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 选择可用 Xcode(最新版启动崩溃则回退镜像默认)
+      - name: 选择可用 Xcode(逐个真编译自检,自动回退)
         run: |
-          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
-          sudo xcode-select -s "$LATEST" 2>/dev/null || true
-          if ! xcodebuild -version >/dev/null 2>&1; then
-            echo "$LATEST 启动异常(Trace/BPT trap),回退镜像默认 Xcode"
-            sudo xcode-select -r
-          fi
-          xcodebuild -version
+          printf 'int plane_war_canary(void){return 263;}\n' > /tmp/canary.c
+          for XC in $(ls -d /Applications/Xcode*.app | sort -Vr); do
+            echo "== 试 $XC"
+            sudo xcode-select -s "$XC" 2>/dev/null || continue
+            sudo xcodebuild -runFirstLaunch >/dev/null 2>&1 || true
+            if xcrun -sdk iphoneos clang -arch arm64 -c /tmp/canary.c -o /tmp/canary.o >/dev/null 2>&1; then
+              echo "== 使用 $XC"
+              xcodebuild -version
+              exit 0
+            fi
+            echo "== $XC 工具链异常(Trace/BPT trap 一类),换下一个"
+          done
+          echo "所有 Xcode 都不可用"
+          exit 1
 
       - name: 编译验证(免签名)
         run: |
