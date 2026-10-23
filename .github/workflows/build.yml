@@ -49,18 +49,18 @@ jobs:
           CRASH=$(ls -t "$HOME/Library/Logs/DiagnosticReports/"xcodebuild*.ips 2>/dev/null | head -1)
           echo "报告: $CRASH"
           if [ -n "$CRASH" ]; then
-            python3 - "$CRASH" <<'PY'
-import json, sys
-raw = open(sys.argv[1]).read()
-body = json.loads(raw[raw.index('{'):])
-print("exception:", json.dumps(body.get("exception", {})))
-print("termination:", json.dumps(body.get("termination", {})))
-ft = body.get("faultingThread", 0)
-imgs = body.get("usedImages", [])
-for f in body["threads"][ft].get("frames", [])[:25]:
-    img = imgs[f["imageIndex"]].get("name", "?") if "imageIndex" in f else "?"
-    print(f"{img}  {f.get('symbol','?')} +{f.get('symbolLocation','')}")
-PY
+            printf '%s\n' \
+              'aW1wb3J0IGpzb24sIHN5cwpyYXcgPSBvcGVuKHN5cy5hcmd2WzFdKS5yZWFkKCkKYm9keSA9IGpz' \
+              'b24ubG9hZHMocmF3W3Jhdy5pbmRleCgneycpOl0pCnByaW50KCJleGNlcHRpb246IiwganNvbi5k' \
+              'dW1wcyhib2R5LmdldCgiZXhjZXB0aW9uIiwge30pKSkKcHJpbnQoInRlcm1pbmF0aW9uOiIsIGpz' \
+              'b24uZHVtcHMoYm9keS5nZXQoInRlcm1pbmF0aW9uIiwge30pKSkKZnQgPSBib2R5LmdldCgiZmF1' \
+              'bHRpbmdUaHJlYWQiLCAwKQppbWdzID0gYm9keS5nZXQoInVzZWRJbWFnZXMiLCBbXSkKZm9yIGYg' \
+              'aW4gYm9keVsidGhyZWFkcyJdW2Z0XS5nZXQoImZyYW1lcyIsIFtdKVs6MjVdOgogICAgaW1nID0g' \
+              'aW1nc1tmWyJpbWFnZUluZGV4Il1dLmdldCgibmFtZSIsICI/IikgaWYgImltYWdlSW5kZXgiIGlu' \
+              'IGYgZWxzZSAiPyIKICAgIHByaW50KGltZywgZi5nZXQoInN5bWJvbCIsICI/IiksICIrIiArIHN0' \
+              'cihmLmdldCgic3ltYm9sTG9jYXRpb24iLCAiIikpKQo=' > /tmp/ips.py.b64
+            base64 -d /tmp/ips.py.b64 > /tmp/ips.py
+            python3 /tmp/ips.py "$CRASH"
           fi
           exit $RC
 
