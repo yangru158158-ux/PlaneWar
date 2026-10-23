@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-26
+    runs-on: macos-15
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -31,8 +31,12 @@ jobs:
           echo "所有 Xcode 都不可用"
           exit 1
 
-      - name: 编译验证(免签名)
+      - name: 编译验证(免签名,崩溃时抓 .ips 堆栈)
         run: |
+          set +e
+          echo "=== 1) xcodebuild -list(探工程文件解析) ==="
+          xcodebuild -list -project PlaneWar.xcodeproj
+          echo "=== 2) 真编译 ==="
           xcodebuild -project PlaneWar.xcodeproj \
             -scheme PlaneWar \
             -configuration Release \
@@ -40,6 +44,25 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
+          RC=$?
+          echo "=== 3) 崩溃报告(若有) ==="
+          CRASH=$(ls -t "$HOME/Library/Logs/DiagnosticReports/"xcodebuild*.ips 2>/dev/null | head -1)
+          echo "报告: $CRASH"
+          if [ -n "$CRASH" ]; then
+            python3 - "$CRASH" <<'PY'
+import json, sys
+raw = open(sys.argv[1]).read()
+body = json.loads(raw[raw.index('{'):])
+print("exception:", json.dumps(body.get("exception", {})))
+print("termination:", json.dumps(body.get("termination", {})))
+ft = body.get("faultingThread", 0)
+imgs = body.get("usedImages", [])
+for f in body["threads"][ft].get("frames", [])[:25]:
+    img = imgs[f["imageIndex"]].get("name", "?") if "imageIndex" in f else "?"
+    print(f"{img}  {f.get('symbol','?')} +{f.get('symbolLocation','')}")
+PY
+          fi
+          exit $RC
 
       - name: 结果
         run: echo "✅ 编译通过,可以进入 TestFlight 发布流程"
