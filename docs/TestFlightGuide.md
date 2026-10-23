@@ -35,7 +35,11 @@ git push -u origin main
 | `P12_PASSWORD` | 智搜时导出 distribution.p12 设的那个密码 |
 | `PROFILE_MOBILEPROVISION` | B2 下载的 `PlaneWar_AppStore.mobileprovision` 做 base64 |
 
-> 前六个都与智搜共用同一份文件;只有描述文件是这个 App 专属的,先做阶段 B 再回来填这条。
+> ⚠️ **GitHub 的 Secret 只写不可读**——智搜仓库里只能看到名字、抄不到值,
+> 所以上表全部从本机原始文件现场生成。偷懒办法:Git Bash 里跑
+> `bash scripts/make_secrets.sh`,它会把可直接粘贴的值生成到 `local/` 目录
+> (已被 .gitignore 忽略),唯一要自己回忆的是 `P12_PASSWORD`。
+> 前六个都与智搜共用同一份本机文件;只有描述文件是这个 App 专属的,先做阶段 B 再回来填这条。
 
 ### A4. 验证编译
 - 推送后打开 Actions 页,**Build Check** 会自动跑;约 5-10 分钟全绿 ✅ = 编译通过。
@@ -51,7 +55,8 @@ git push -u origin main
 - <https://developer.apple.com/account/resources/profiles/list> → **+**
 - Distribution 选 **App Store Connect** → Continue
 - App ID 选 `com.planewar.thunder` → Continue
-- 证书勾选 **Apple Distribution**(QBU3P5SMNS 名下已有的那一张)→ Generate
+- **描述文件名称必须填 `PlaneWar AppStore`**(工作流导出时按这个名字引用)
+- 证书勾选 **Apple Distribution**(QBU3P5SMNS 名下已有的那一张,一张证书可签所有 App,不用新建)→ Generate
 - **Download** 得到 `PlaneWar_AppStore.mobileprovision` → 回去完成 A3 的最后一条 secret
 
 ### B3. 在 App Store Connect 建 App 记录(TestFlight 的挂载点)
@@ -82,6 +87,30 @@ git push -u origin main
 ### C4. 以后的更新
 改代码 → `git push` → 重跑 **Release to TestFlight**(构建号自动递增)→ TestFlight 里更新。
 构建 90 天过期,过期重跑一次工作流即可。
+
+### 另路:免费侧载(不经 TestFlight)
+Actions → **Build Unsigned IPA** → Run,跑完在页面底部 Artifacts 下载
+`PlaneWar-unsigned-ipa`,解压得 `PlaneWar-unsigned.ipa`,用 Sideloadly/爱思助手
+以自己的 Apple ID 签名安装(7 天有效)。适合临时自用;给别人测还是走 TestFlight。
+
+## 发版纪律(智搜跑通验证过的运维规矩,照做)
+
+1. **铁律**:push 后先等 **Build Check** 全绿,才允许发版;发版只认 `release.yml`。
+2. **gh CLI 发版与轮询**(Windows 已装 gh 的话):
+   ```bash
+   gh workflow run release.yml                       # 触发发版
+   gh run list --workflow=release.yml --limit 1      # 拿最新 run id
+   gh run view <id> --json status,conclusion         # 轮询到 conclusion 出现
+   ```
+   gh 未登录时:`export GH_TOKEN=$(cat <token文件> | tr -d '\r\n')`。
+3. **版本号纪律**:build 号 = 工作流的 `github.run_number`,单调递增永不撞号,
+   TestFlight 显示为 `1.0(N)`;不要在代码里手写 build 号。
+4. **macOS 容量拒单判别**(智搜实测,单日可连拒多次):
+   job 结论 `cancelled`、**零失败 step、零日志、排队约 15-22 分钟** = 没抢到 runner,
+   不是真失败 → `gh run rerun <id>` 重派即可,**别改任何东西**;
+   **有 error 日志才是真失败**,读日志修。连拒可等一小时再重派;排队中的 run 会一直等,不用干预。
+5. **仓库可见性**:保持 **Public**——公开仓库 macOS 构建免费;私有仓库 macOS 分钟按
+   10 倍扣,智搜就是靠公开仓库免费额度跑的,别改成 Private。
 
 ## 常见问题
 

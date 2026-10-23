@@ -43,14 +43,24 @@ PlaneWar/
 导出 ipa：Xcode 菜单 Product → Archive → Distribute App → Debug/Ad-Hoc，
 得到 ipa 后可用 Apple Configurator、Sideloadly 或爱思助手安装。
 
-## 没有 Mac 怎么办
+## 发布渠道（GitHub Actions，参照智搜 MediaSeek 链路）
 
-**首选：TestFlight 正式分发**（参照智搜 MediaSeek 的发布链路，本机已配好 GitHub Actions
-macOS 云构建 + App Store Connect 自动上传，全程 0 元）：
-按 [docs/TestFlightGuide.md](docs/TestFlightGuide.md) 走，iPhone 上通过 TestFlight 安装，
-更新只需 push 后重跑工作流。
+本仓库带四个工作流（`.github/workflows/`），全部跑在 GitHub 的 macOS 云构建上。
+**仓库必须保持 Public**——公开仓库 macOS 构建免费，私有仓库 macOS 分钟按 10 倍计费。
 
-备选：
+| 工作流 | 触发 | 作用 |
+|---|---|---|
+| Build Check | push 自动 | 免签名编译验证；绿了才允许发版 |
+| Release to TestFlight | 手动 | 签名归档 → 导出 ipa → altool 上传 TestFlight（发版主通道） |
+| Build Unsigned IPA | 手动 | 产出未签名 ipa 工件，下载后 Sideloadly 侧载自用（7 天） |
+| ASC Tools | 手动 | 邀请 TestFlight 测试员 / 外部组 Beta 审核（本机 DNS 不通苹果 API，借 CI 跑） |
+
+发版步骤、7 个 Secrets 的生成（⚠️ Secret 只写不可读，用 `bash scripts/make_secrets.sh`
+从本机原始文件一键产出到 `local/`）、发版纪律（build 号 = run_number、macOS 容量拒单的
+重派判别）全部写在 **[docs/TestFlightGuide.md](docs/TestFlightGuide.md)**。
+
+## 没有 Mac 本地装机的备选
+
 - **云 Mac / 朋友 Mac**：远程打开本工程执行上面第 2–3 步，或 Archive 导出 ipa。
 - 拿到 ipa 后，你在 Windows 上已熟悉的 **Sideloadly** 流程即可安装（Apple ID 免费签名 7 天）。
 

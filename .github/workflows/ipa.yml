@@ -1,0 +1,42 @@
+name: Build Unsigned IPA
+# 免费侧载路线(不经过 TestFlight):产出未签名 ipa 工件,
+# 下载后用 Sideloadly/爱思助手以自己的 Apple ID 签名安装(7 天有效)。
+on:
+  workflow_dispatch:
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 选择最新 Xcode
+        run: |
+          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "使用 $LATEST"
+          sudo xcode-select -s "$LATEST"
+          xcodebuild -version
+
+      - name: 免签名编译
+        run: |
+          xcodebuild -project PlaneWar.xcodeproj \
+            -scheme PlaneWar \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+
+      - name: 打包未签名 IPA
+        run: |
+          APP=$(find build/dd/Build/Products -maxdepth 3 -name "*.app" | head -1)
+          echo "产物: $APP"
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry PlaneWar-unsigned.ipa Payload
+
+      - name: 上传工件
+        uses: actions/upload-artifact@v4
+        with:
+          name: PlaneWar-unsigned-ipa
+          path: PlaneWar-unsigned.ipa
