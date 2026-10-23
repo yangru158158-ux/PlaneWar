@@ -20,8 +20,12 @@ echo "8H66F4QJCN"                            > "$OUT/ASC_KEY_ID.txt";           
 echo "fb64c8fb-5335-4bf6-933b-a8b1a7837103"  > "$OUT/ASC_ISSUER_ID.txt";           echo "已生成 $OUT/ASC_ISSUER_ID.txt"
 echo "QBU3P5SMNS"                            > "$OUT/DEVELOPMENT_TEAM_ID.txt";     echo "已生成 $OUT/DEVELOPMENT_TEAM_ID.txt"
 
-# 只能手工提供的两项
+# 只能手工提供的一项
 echo "✍  P12_PASSWORD:智搜导出 distribution.p12 时设的密码,自己回忆填入"
-echo "✍  PROFILE_MOBILEPROVISION:先按指南 B2 在苹果后台生成并下载"
-echo "   PlaneWar_AppStore.mobileprovision,然后执行:"
-echo "   base64 -w0 下载目录/PlaneWar_AppStore.mobileprovision > '$OUT/PROFILE_MOBILEPROVISION.txt'"
+# 描述文件:已在浏览器操作中生成并下载到 Downloads
+PROF="/c/Users/44957/Downloads/PlaneWar_AppStore.mobileprovision"
+if [ -f "$PROF" ]; then
+  b64 "$PROF" PROFILE_MOBILEPROVISION
+else
+  echo "✍  PROFILE_MOBILEPROVISION:未找到 $PROF —— 按指南 B2 生成下载后重跑本脚本"
+fi

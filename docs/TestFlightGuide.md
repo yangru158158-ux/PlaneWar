@@ -33,36 +33,29 @@ git push -u origin main
 | `DEVELOPMENT_TEAM_ID` | `QBU3P5SMNS` |
 | `DISTRIBUTION_P12` | `base64 -w0 "C:\Users\44957\Downloads\MediaSeek装机\distribution.p12"` 的输出(团队证书复用) |
 | `P12_PASSWORD` | 智搜时导出 distribution.p12 设的那个密码 |
-| `PROFILE_MOBILEPROVISION` | B2 下载的 `PlaneWar_AppStore.mobileprovision` 做 base64 |
+| `PROFILE_MOBILEPROVISION` | 已由 `make_secrets.sh` 自动生成(描述文件已下载到 `Downloads\PlaneWar_AppStore.mobileprovision`) |
 
 > ⚠️ **GitHub 的 Secret 只写不可读**——智搜仓库里只能看到名字、抄不到值,
-> 所以上表全部从本机原始文件现场生成。偷懒办法:Git Bash 里跑
-> `bash scripts/make_secrets.sh`,它会把可直接粘贴的值生成到 `local/` 目录
-> (已被 .gitignore 忽略),唯一要自己回忆的是 `P12_PASSWORD`。
-> 前六个都与智搜共用同一份本机文件;只有描述文件是这个 App 专属的,先做阶段 B 再回来填这条。
+> 所以上表全部从本机原始文件现场生成。Git Bash 里跑 `bash scripts/make_secrets.sh`,
+> 它会把可直接粘贴的值生成到 `local/` 目录(已被 .gitignore 忽略),
+> 唯一要自己回忆的是 `P12_PASSWORD`。
+
+## 阶段 B:苹果网页登记 ✅ 已完成(2026-10-24 浏览器自动化操作)
+
+三项登记全部做完,以下是登记结果存档,以后查证用:
+
+| 项目 | 结果 |
+|---|---|
+| App ID | `com.planewar.thunder`(Explicit,名称 PlaneWar,未勾选任何能力) |
+| 描述文件 | `PlaneWar AppStore`(iOS App Store 分发,证书 yang ru (Distribution),文件已下载到 `C:\Users\44957\Downloads\PlaneWar_AppStore.mobileprovision`) |
+| ASC App 记录 | 名称「雷霆空战：飞行射击」(「雷霆空战」被占用;手机上显示名仍为内置的「雷霆空战」),**ASC App ID `6826326093`**,SKU `planewar001`,主要语言简体中文,用户访问权限=有限 |
+
+> 注意:ASC 首页提示《Apple Developer Program 许可协议》有更新待账户持有人在
+> developer.apple.com/account 确认——目前创建 App 记录不受影响,但**提交构建供测试前**
+> 若被要求接受协议,登录苹果后台点一次同意即可。
 
 ### A4. 验证编译
 - 推送后打开 Actions 页,**Build Check** 会自动跑;约 5-10 分钟全绿 ✅ = 编译通过。
-
-## 阶段 B:苹果网页登记(不花钱,约 10 分钟)
-
-### B1. 注册 App ID
-- <https://developer.apple.com/account/resources/identifiers/list/bundleId> → **+**
-- App IDs → App → 能力不加,Continue
-- Description `PlaneWar`,Bundle ID 选 **Explicit**,输入 `com.planewar.thunder` → Register
-
-### B2. 生成 App Store 描述文件(本 App 唯一的新签名材料)
-- <https://developer.apple.com/account/resources/profiles/list> → **+**
-- Distribution 选 **App Store Connect** → Continue
-- App ID 选 `com.planewar.thunder` → Continue
-- **描述文件名称必须填 `PlaneWar AppStore`**(工作流导出时按这个名字引用)
-- 证书勾选 **Apple Distribution**(QBU3P5SMNS 名下已有的那一张,一张证书可签所有 App,不用新建)→ Generate
-- **Download** 得到 `PlaneWar_AppStore.mobileprovision` → 回去完成 A3 的最后一条 secret
-
-### B3. 在 App Store Connect 建 App 记录(TestFlight 的挂载点)
-- <https://appstoreconnect.apple.com/apps> → **+** → 新建 App
-- 名称:`雷霆空战`(被占用就换,只影响显示)、主要语言:简体中文
-- Bundle ID:`com.planewar.thunder`,SKU:`planewar001` → 创建
 
 ## 阶段 C:发布并装机
 
