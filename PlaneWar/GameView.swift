@@ -8,7 +8,6 @@ struct GameView: UIViewRepresentable {
         cfg.setURLSchemeHandler(ThunderSchemeHandler(), forURLScheme: ThunderSchemeHandler.scheme)
         cfg.websiteDataStore = .default()
         cfg.allowsInlineMediaPlayback = true
-        cfg.mediaTypesRequiringUserActionForMediaPlayback = []
 
         let wv = WKWebView(frame: .zero, configuration: cfg)
         wv.isOpaque = false
