@@ -5,3 +5,4 @@ DerivedData/
 *.xcarchive
 local/
 __pycache__/
+*.xcodeproj

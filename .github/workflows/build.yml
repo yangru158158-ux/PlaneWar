@@ -31,6 +31,11 @@ jobs:
           echo "所有 Xcode 都不可用"
           exit 1
 
+      - name: 安装 XcodeGen 并生成工程
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
       - name: 编译验证(免签名,崩溃时抓 .ips 堆栈)
         run: |
           set +e

@@ -107,7 +107,7 @@ Actions → **Build Unsigned IPA** → Run,跑完在页面底部 Artifacts 下�
 
 ## 常见问题
 
-- **Build Check 挂了?** 点进红色步骤看日志发我;工程是手写 pbxproj,已用标准库校验过,常见问题多是 runner 的 Xcode 版本变动。
+- **Build Check 挂了?** 点进红色步骤看日志发我。工程文件由 XcodeGen 现场生成(仓库只提交 project.yml),手写 pbxproj 曾让 Xcode 26 解析器崩溃(SIGTRAP),已整体迁移;常见问题多是 runner 镜像变动。
 - **Release 报签名错误?** 核对 7 个 secret 拼写与 Team ID 无多余空格;描述文件必须含 `com.planewar.thunder` 且证书选的是同一张 Apple Distribution。
 - **上传被拒 "Invalid Bundle"?** Bundle ID 要与 B1 注册完全一致(`com.planewar.thunder`)。
 - **邀请邮件没收到?** 外部组九成是没跑 `external-setup`(组里没有已过审构建);内部组确认对方已是 ASC 团队成员。

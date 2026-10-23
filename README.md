@@ -8,7 +8,7 @@ SwiftUI 只做壳（全屏、竖屏锁定、隐藏状态栏、游戏中不息屏
 
 ```
 PlaneWar/
-├─ PlaneWar.xcodeproj/          # Xcode 16+ 工程（文件系统同步组，无需手动加文件）
+├─ project.yml                  # XcodeGen 工程定义（工程文件由它生成，不手写）
 ├─ Info.plist                   # 显示名「雷霆空战」、竖屏、隐藏状态栏、启动屏
 └─ PlaneWar/
    ├─ PlaneWarApp.swift         # @main SwiftUI 入口
@@ -30,9 +30,9 @@ PlaneWar/
 
 ## 在 Mac 上构建运行（推荐）
 
-要求：Xcode 16 或更高（工程用了 fileSystemSynchronizedGroups 新格式）、iOS 16+ 真机或模拟器。
+要求：Xcode 16 或更高、iOS 16+ 真机或模拟器，以及 [XcodeGen](https://github.com/yonaskolb/XcodeGen)（`brew install xcodegen`）。
 
-1. 把 `PlaneWar/` 整个文件夹拷到 Mac，双击打开 `PlaneWar.xcodeproj`。
+1. 把 `PlaneWar/` 整个文件夹拷到 Mac，在目录里执行 `xcodegen generate` 生成 `PlaneWar.xcodeproj`，双击打开。
 2. 选中左侧 PlaneWar 工程 → TARGETS `PlaneWar` → **Signing & Capabilities**：
    勾选 `Automatically manage signing`，Team 选择你的 Apple ID（免费账号即可）。
    如需改 Bundle ID：当前为 `com.planewar.thunder`，免费账号改一个独有值即可。

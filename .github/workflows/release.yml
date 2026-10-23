@@ -65,6 +65,11 @@ jobs:
           CP="$HOME/Library/MobileDevice/Provisioning Profiles/PlaneWar_AppStore.mobileprovision"
           echo "$PROFILE" | base64 --decode > "$CP"
 
+      - name: 安装 XcodeGen 并生成工程
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
       - name: 归档(手动签名)
         env:
           TEAM_ID: ${{ secrets.DEVELOPMENT_TEAM_ID }}
