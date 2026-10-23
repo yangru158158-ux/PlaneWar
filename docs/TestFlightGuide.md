@@ -6,6 +6,19 @@
 > 这次全程 0 元**,只需在苹果网页上给新 Bundle ID 做三件登记。
 > 你的角色:按顺序做浏览器操作;自动化部分(工作流、脚本)已全部备好。
 
+## ✅ 当前进度(2026-10-24 全流程已打通,1.0(1) 已在 TestFlight)
+
+| 环节 | 结果 |
+|---|---|
+| 阶段 A | 仓库 <https://github.com/yangru158158-ux/PlaneWar>(公开)已建,7 个 Secrets 已配 |
+| 阶段 B | App ID / 描述文件 / ASC 记录(6826326093)全登记完毕 |
+| C1 发布 | Run [39998264543](https://github.com/yangru158158-ux/PlaneWar/actions/runs/39998264543) 全绿,UPLOAD SUCCEEDED(Delivery `eadefe1c`),版本 1.0(1) |
+| C2 测试员 | 内部群组「内部测试」已建,44957799@qq.com(杨如)已邀请(2026-10-24) |
+| 剩余 | iPhone 装 TestFlight → 接受邀请 → 安装「雷霆空战」;以后的更新 = push → 重跑 Release |
+
+> 经验:macos-15 镜像上 Xcode 26.3 的 xcodebuild 构建期 SIGTRAP(xcodebuild -list 都崩,
+> clang 却正常),手写 pbxproj 也会让解析器崩——工程已迁移为 XcodeGen,runner 用 macos-15/26 均可。
+
 ## 阶段 A:GitHub 仓库与密钥(不花钱)
 
 ### A1. 创建仓库
