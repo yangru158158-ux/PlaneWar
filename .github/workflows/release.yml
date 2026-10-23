@@ -17,11 +17,14 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 选择最新 Xcode
+      - name: 选择可用 Xcode(最新版启动崩溃则回退镜像默认)
         run: |
           LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
-          echo "使用 $LATEST"
-          sudo xcode-select -s "$LATEST"
+          sudo xcode-select -s "$LATEST" 2>/dev/null || true
+          if ! xcodebuild -version >/dev/null 2>&1; then
+            echo "$LATEST 启动异常(Trace/BPT trap),回退镜像默认 Xcode"
+            sudo xcode-select -r
+          fi
           xcodebuild -version
 
       - name: 写入上传用 API 密钥
