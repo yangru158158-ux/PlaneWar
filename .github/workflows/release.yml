@@ -1,0 +1,131 @@
+name: Release to TestFlight
+# 手动签名版(与智搜 MediaSeek 同一套路):用预创建的 Apple Distribution 证书
+# + 本 App 专属的 App Store 描述文件。团队证书/ASC 密钥复用智搜那套。
+# Secrets:
+#   DISTRIBUTION_P12        distribution.p12 的 base64(复用 MediaSeek装机 里的)
+#   P12_PASSWORD            p12 密码
+#   PROFILE_MOBILEPROVISION PlaneWar_AppStore.mobileprovision 的 base64(新 App 专属,须新生成)
+#   ASC_KEY_ID / ASC_ISSUER_ID / ASC_API_KEY_P8  上传用 API 密钥(复用 8H66F4QJCN)
+#   DEVELOPMENT_TEAM_ID     QBU3P5SMNS
+on:
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: macos-15
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 选择最新 Xcode
+        run: |
+          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "使用 $LATEST"
+          sudo xcode-select -s "$LATEST"
+          xcodebuild -version
+
+      - name: 写入上传用 API 密钥
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          mkdir -p $HOME/.appstoreconnect/private_keys
+          echo "$ASC_API_KEY_P8" | base64 --decode > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+
+      - name: 导入分发证书到临时钥匙串
+        env:
+          DISTRIBUTION_P12: ${{ secrets.DISTRIBUTION_P12 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        run: |
+          CERT_PATH="$RUNNER_TEMP/distribution.p12"
+          echo "$DISTRIBUTION_P12" | base64 --decode > "$CERT_PATH"
+          KC="$RUNNER_TEMP/build.keychain-db"
+          security create-keychain -p planewar-kc "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p planewar-kc "$KC"
+          security import "$CERT_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KC"
+          security set-key-partition-list -S apple-tool:,apple: -s -k planewar-kc "$KC"
+          security list-keychain -d user -s "$KC" login.keychain-db
+
+      - name: 安装描述文件
+        env:
+          PROFILE: ${{ secrets.PROFILE_MOBILEPROVISION }}
+        run: |
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          CP="$HOME/Library/MobileDevice/Provisioning Profiles/PlaneWar_AppStore.mobileprovision"
+          echo "$PROFILE" | base64 --decode > "$CP"
+
+      - name: 归档(手动签名)
+        env:
+          TEAM_ID: ${{ secrets.DEVELOPMENT_TEAM_ID }}
+          BUILD_NUM: ${{ github.run_number }}
+        run: |
+          xcodebuild archive CURRENT_PROJECT_VERSION="$BUILD_NUM" \
+            -project PlaneWar.xcodeproj \
+            -scheme PlaneWar \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/PlaneWar.xcarchive \
+            DEVELOPMENT_TEAM="$TEAM_ID"
+
+      - name: 导出 IPA(手动签名)
+        env:
+          TEAM_ID: ${{ secrets.DEVELOPMENT_TEAM_ID }}
+        run: |
+          cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.planewar.thunder</key>
+              <string>PlaneWar AppStore</string>
+            </dict>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>manageAppVersionAndBuildNumber</key>
+            <true/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath build/PlaneWar.xcarchive \
+            -exportOptionsPlist build/ExportOptions.plist \
+            -exportPath build/ipa
+          echo "=== 打包自检:实际 Info.plist ==="
+          unzip -o -q build/ipa/*.ipa -d build/ipa_x
+          plutil -p "build/ipa_x/Payload/PlaneWar.app/Info.plist" | grep -E "Orientation|Icon|Encryption|BundleIdentifier|DisplayName" || true
+
+      - name: 上传 TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcrun altool --upload-app \
+            -f build/ipa/*.ipa \
+            -t ios \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID"
+
+      - name: 存档 dSYM 与原始二进制(本地解析 .ips 崩溃用)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PlaneWar-dSYM
+          path: |
+            build/PlaneWar.xcarchive/dSYMs/
+            build/PlaneWar.xcarchive/Products/Applications/PlaneWar.app/PlaneWar
+
+      - name: 完成
+        run: |
+          echo "🎉 已上传 TestFlight!等待 5-15 分钟处理后:"
+          echo "   ASC → TestFlight → 内部测试 → 添加测试员(或跑 ASC Tools 工作流邀请外部测试员)"
+          echo "   iPhone 的 TestFlight App 中安装「雷霆空战」"

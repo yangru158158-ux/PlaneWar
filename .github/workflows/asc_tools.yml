@@ -1,0 +1,62 @@
+name: ASC Tools
+# App Store Connect API 工具(与智搜 MediaSeek 同款;本机 DNS 不通苹果域名,
+# 只能借 CI 的网):add-tester = 邀请 TestFlight 测试员到指定组(默认外部组;
+# 内部组须对方已是 ASC 团队成员)。external-setup = 外部组配货(挂构建+Beta审核)。
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "add-tester / external-setup"
+        required: true
+        default: add-tester
+      email:
+        description: "测试员邮箱"
+        required: true
+      group:
+        description: "测试组名"
+        required: true
+        default: "外部测试"
+      contact_last:
+        description: "审核联系人姓(external-setup 用)"
+        required: false
+      contact_first:
+        description: "审核联系人名"
+        required: false
+      contact_email:
+        description: "审核联系邮箱"
+        required: false
+      contact_phone:
+        description: "审核联系电话(含区号)"
+        required: false
+
+jobs:
+  run:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装依赖
+        run: pip3 install --break-system-packages --quiet cryptography
+
+      - name: 邀请测试员
+        if: inputs.job == 'add-tester'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: python3 scripts/asc_add_tester.py "${{ inputs.email }}" "${{ inputs.group }}"
+
+      - name: 外部组配货(挂构建+提交Beta审核)
+        if: inputs.job == 'external-setup'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          ARGS=("${{ inputs.group }}")
+          if [ -n "${{ inputs.contact_phone }}" ]; then
+            ARGS+=("${{ inputs.contact_last }}" "${{ inputs.contact_first }}" "${{ inputs.contact_email }}" "${{ inputs.contact_phone }}")
+          fi
+          python3 scripts/asc_external_setup.py "${ARGS[@]}"
