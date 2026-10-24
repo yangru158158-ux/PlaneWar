@@ -18,7 +18,7 @@
    雷霆空战 —— 单文件飞行射击游戏（无任何外部依赖）
    移动：拖动屏幕（也支持键盘 / 鼠标）   射击：自动
    右下角按钮：暂停 · 静音    点击屏幕开始
-   （iOS 版：为触屏补了暂停/静音按钮与切后台自动暂停）
+   （iOS 版：触屏暂停/静音按钮 · 切后台自动暂停 · 最高分纯按真实成绩）
 ============================================================ */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -116,11 +116,10 @@ let state='menu';           // menu | play | pause | over
 let score=0,newRecord=false;
 let hiscore=0;
 try{hiscore=+(localStorage.getItem('thunder_hiscore')||0)||0;}catch(e){}
-try{ // 一次性设定：把历史最高分设为 20 万（之后按真实成绩正常刷新）
-  if(localStorage.getItem('thunder_seed200k')!=='1'){
-    if(hiscore<200000)hiscore=200000;
-    localStorage.setItem('thunder_hiscore',String(hiscore));
-    localStorage.setItem('thunder_seed200k','1');
+try{ // 一次性迁移:清除旧版的"种子 20 万"设定,最高分回归真实成绩
+  if(localStorage.getItem('thunder_seed200k')==='1'){
+    if(hiscore<=200000)hiscore=0;   // 没打出超过种子分的真实成绩则清零
+    localStorage.removeItem('thunder_seed200k');
   }
 }catch(e){}
 function saveHi(){try{localStorage.setItem('thunder_hiscore',String(hiscore));}catch(e){}}
